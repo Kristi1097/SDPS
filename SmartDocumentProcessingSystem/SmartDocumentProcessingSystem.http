@@ -1,0 +1,6 @@
+@SmartDocumentProcessingSystem_HostAddress = http://localhost:5183
+
+GET {{SmartDocumentProcessingSystem_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
