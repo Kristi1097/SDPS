@@ -361,3 +361,7 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+# Local OCR/runtime tooling. Install Tesseract outside the repo or keep local
+# experiments here without committing binaries.
+tools/tesseract/

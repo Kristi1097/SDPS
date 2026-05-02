@@ -1,23 +1,46 @@
+using Microsoft.EntityFrameworkCore;
+using System.Text.Json.Serialization;
+using SmartDocumentProcessingSystem.Configuration;
+using SmartDocumentProcessingSystem.DatabaseContext;
+using SmartDocumentProcessingSystem.Services;
+using SmartDocumentProcessingSystem.Services.Processing;
+
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+builder.Services.Configure<ProcessingOptions>(builder.Configuration.GetSection("Processing"));
 
-builder.Services.AddControllers();
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+    ?? throw new InvalidOperationException("DefaultConnection is not configured.");
+
+builder.Services.AddDbContext<SDPSContext>(options => options.UseNpgsql(connectionString));
+builder.Services.AddScoped<IDocumentService, DocumentService>();
+builder.Services.AddScoped<DocumentTextExtractor>();
+builder.Services.AddScoped<DocumentParser>();
+builder.Services.AddScoped<DocumentValidator>();
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("Frontend", policy =>
+        policy.WithOrigins("http://localhost:4200", "https://localhost:4200")
+            .AllowAnyHeader()
+            .AllowAnyMethod());
+});
+
+builder.Services.AddControllers().AddJsonOptions(options =>
+{
+    options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+});
 builder.Services.AddOpenApi();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
 }
 
 app.UseHttpsRedirection();
-
+app.UseCors("Frontend");
 app.UseAuthorization();
-
 app.MapControllers();
-
 app.Run();
