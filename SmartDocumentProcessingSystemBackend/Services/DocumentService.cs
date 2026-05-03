@@ -97,7 +97,10 @@ public class DocumentService : IDocumentService
             .ToDictionaryAsync(x => x.OriginalFileName, StringComparer.OrdinalIgnoreCase, cancellationToken);
 
         var imported = new List<Document>();
-        foreach (var file in Directory.GetFiles(samplePath).Where(path => DocumentTextExtractor.IsSupported(Path.GetExtension(path))).OrderBy(Path.GetFileName))
+        foreach (var file in Directory.GetFiles(samplePath)
+            .Where(path => DocumentTextExtractor.IsSupported(Path.GetExtension(path)))
+            .Where(path => !Path.GetFileName(path).StartsWith("Screenshot ", StringComparison.OrdinalIgnoreCase))
+            .OrderBy(Path.GetFileName))
         {
             var fileName = Path.GetFileName(file);
             if (existingDocuments.TryGetValue(fileName, out var existingDocument))
