@@ -1,24 +1,20 @@
 <main class="workspace">
   <header class="topbar">
-    <div>
-      <h1>Smart Document Processing</h1>
-      <p>Extract, validate, review, and confirm business documents.</p>
-    </div>
     <div class="actions">
       <label class="file-button">
         Upload
         <input type="file" (change)="uploadFile($event)" accept=".pdf,.png,.jpg,.jpeg,.csv,.txt" />
       </label>
-      <button type="button" [class.done]="isActionDone('import')" (click)="importSamples()">
+      <button type="button" [class.done]="isActionDone('import')" [disabled]="isActionBusy('import')" (click)="importSamples()">
         <span *ngIf="isActionDone('import')">✓</span>
-        Import samples
+        {{ isActionBusy('import') ? 'Importing...' : 'Import samples' }}
       </button>
-      <button type="button" class="secondary" (click)="refresh()">Refresh</button>
+      <button type="button" class="secondary" [disabled]="loading" (click)="refresh()">Refresh</button>
     </div>
   </header>
 
   <section class="message-row" *ngIf="actionMessage || errorMessage || loading">
-    <span class="message" *ngIf="loading">Loading...</span>
+    <span class="message" *ngIf="loading && !actionMessage">Loading...</span>
     <span class="message success" *ngIf="actionMessage">{{ actionMessage }}</span>
     <span class="message error" *ngIf="errorMessage">{{ errorMessage }}</span>
   </section>
@@ -174,21 +170,21 @@
       </section>
 
       <div class="review-actions">
-        <button type="button" [class.done]="isActionDone('save')" (click)="saveCorrections()">
+        <button type="button" [class.done]="isActionDone('save')" [disabled]="isActionBusy('save')" (click)="saveCorrections()">
           <span *ngIf="isActionDone('save')">✓</span>
-          Save corrections
+          {{ isActionBusy('save') ? 'Saving...' : 'Save corrections' }}
         </button>
-        <button type="button" class="secondary" [class.done]="isActionDone('validate')" (click)="revalidate()">
+        <button type="button" class="secondary" [class.done]="isActionDone('validate')" [disabled]="isActionBusy('validate')" (click)="revalidate()">
           <span *ngIf="isActionDone('validate')">✓</span>
-          Revalidate
+          {{ isActionBusy('validate') ? 'Checking...' : 'Revalidate' }}
         </button>
-        <button type="button" class="confirm" [class.done]="isActionDone('confirm')" (click)="confirm()">
+        <button type="button" class="confirm" [class.done]="isActionDone('confirm')" [disabled]="isActionBusy('confirm')" (click)="confirm()">
           <span *ngIf="isActionDone('confirm')">✓</span>
-          Confirm
+          {{ isActionBusy('confirm') ? 'Confirming...' : 'Confirm' }}
         </button>
-        <button type="button" class="reject" [class.done]="isActionDone('reject')" (click)="reject()">
+        <button type="button" class="reject" [class.done]="isActionDone('reject')" [disabled]="isActionBusy('reject')" (click)="reject()">
           <span *ngIf="isActionDone('reject')">✓</span>
-          Reject
+          {{ isActionBusy('reject') ? 'Rejecting...' : 'Reject' }}
         </button>
       </div>
     </aside>

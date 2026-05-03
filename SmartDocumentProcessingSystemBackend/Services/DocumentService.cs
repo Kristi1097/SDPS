@@ -97,12 +97,10 @@ public class DocumentService : IDocumentService
             .ToDictionaryAsync(x => x.OriginalFileName, StringComparer.OrdinalIgnoreCase, cancellationToken);
 
         var imported = new List<Document>();
-        foreach (var file in Directory.GetFiles(samplePath)
-            .Where(path => DocumentTextExtractor.IsSupported(Path.GetExtension(path)))
-            .Where(path => !Path.GetFileName(path).StartsWith("Screenshot ", StringComparison.OrdinalIgnoreCase))
-            .OrderBy(Path.GetFileName))
+        foreach (var file in Directory.GetFiles(samplePath).Where(path => DocumentTextExtractor.IsSupported(Path.GetExtension(path))).OrderBy(Path.GetFileName))
         {
             var fileName = Path.GetFileName(file);
+            var skipOcr = fileName.StartsWith("Screenshot ", StringComparison.OrdinalIgnoreCase);
             if (existingDocuments.TryGetValue(fileName, out var existingDocument))
             {
                 if (!refreshExisting)
@@ -111,14 +109,14 @@ public class DocumentService : IDocumentService
                 }
 
                 await using var refreshStream = File.OpenRead(file);
-                var refreshed = await ProcessStreamAsync(refreshStream, fileName, cancellationToken, existingDocument.Id);
+                var refreshed = await ProcessStreamAsync(refreshStream, fileName, cancellationToken, existingDocument.Id, skipOcr);
                 RefreshEntity(existingDocument, refreshed);
                 imported.Add(existingDocument);
                 continue;
             }
 
             await using var stream = File.OpenRead(file);
-            var document = await ProcessStreamAsync(stream, fileName, cancellationToken);
+            var document = await ProcessStreamAsync(stream, fileName, cancellationToken, skipImageOcr: skipOcr);
             _context.Documents.Add(document);
             imported.Add(document);
             existingDocuments.Add(document.OriginalFileName, document);
@@ -228,11 +226,16 @@ public class DocumentService : IDocumentService
         return true;
     }
 
-    private async Task<Document> ProcessStreamAsync(Stream stream, string fileName, CancellationToken cancellationToken, int? currentDocumentId = null)
+    private async Task<Document> ProcessStreamAsync(
+        Stream stream,
+        string fileName,
+        CancellationToken cancellationToken,
+        int? currentDocumentId = null,
+        bool skipImageOcr = false)
     {
         var extension = Path.GetExtension(fileName);
         var supported = DocumentTextExtractor.IsSupported(extension);
-        var rawText = supported ? await _textExtractor.ExtractAsync(stream, fileName, cancellationToken) : string.Empty;
+        var rawText = supported && !skipImageOcr ? await _textExtractor.ExtractAsync(stream, fileName, cancellationToken) : string.Empty;
         var extracted = _parser.Parse(rawText, fileName, extension);
 
         if (!supported)
@@ -245,7 +248,16 @@ public class DocumentService : IDocumentService
             });
         }
 
-        if (string.IsNullOrWhiteSpace(rawText) && extension is ".png" or ".jpg" or ".jpeg")
+        if (skipImageOcr)
+        {
+            extracted.ExtractionIssues.Add(new ValidationIssue
+            {
+                Severity = ValidationSeverity.Warning,
+                FieldPath = "rawText",
+                Message = "Screenshot sample was imported without OCR so sample import can finish quickly."
+            });
+        }
+        else if (string.IsNullOrWhiteSpace(rawText) && extension is ".png" or ".jpg" or ".jpeg")
         {
             extracted.ExtractionIssues.Add(new ValidationIssue
             {

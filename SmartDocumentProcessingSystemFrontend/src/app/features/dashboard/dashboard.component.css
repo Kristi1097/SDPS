@@ -14,23 +14,14 @@
 }
 
 .topbar {
-  display: flex;
-  justify-content: space-between;
-  gap: 24px;
-  align-items: flex-end;
+  text-align: right;
   margin-bottom: 18px;
 }
 
-h1,
 h2,
 h3,
 p {
   margin: 0;
-}
-
-h1 {
-  font-size: 28px;
-  font-weight: 700;
 }
 
 h2 {
@@ -41,16 +32,15 @@ h3 {
   font-size: 15px;
 }
 
-.topbar p {
-  color: #657188;
-  margin-top: 6px;
-}
-
 .actions,
 .review-actions {
-  display: flex;
+  display: inline-flex;
   gap: 10px;
   flex-wrap: wrap;
+}
+
+.review-actions {
+  display: flex;
 }
 
 button,
@@ -76,6 +66,11 @@ button.confirm {
 
 button.done {
   background: #15803d;
+}
+
+button:disabled {
+  cursor: default;
+  opacity: 0.75;
 }
 
 button.reject {
