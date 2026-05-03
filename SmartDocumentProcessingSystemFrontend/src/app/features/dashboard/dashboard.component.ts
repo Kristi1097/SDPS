@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { finalize } from 'rxjs';
+import { finalize, timeout } from 'rxjs';
 import {
   DashboardSummary,
   DocumentDetail,
@@ -42,12 +42,15 @@ export class DashboardComponent implements OnInit {
   refresh(showLoading = true) {
     this.errorMessage = '';
     this.loading = showLoading;
-    this.api.getDocuments().pipe(finalize(() => (this.loading = false))).subscribe({
+    this.api.getDocuments().pipe(
+      timeout(15000),
+      finalize(() => (this.loading = false))
+    ).subscribe({
       next: (documents) => {
         this.documents = documents;
       },
       error: () => {
-        this.errorMessage = 'Could not load documents. Check that the backend is running on localhost:5183.';
+        this.errorMessage = 'Could not load documents.';
       },
     });
 
