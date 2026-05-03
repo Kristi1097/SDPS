@@ -9,7 +9,8 @@ import {
 
 @Injectable({ providedIn: 'root' })
 export class DocumentApiService {
-  private readonly baseUrl = 'http://localhost:5183/api/documents';
+  private readonly baseUrl =
+    window.location.port === '4200' ? 'http://localhost:5183/api/documents' : '/api/documents';
 
   constructor(private readonly http: HttpClient) {}
 

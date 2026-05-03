@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: sdps
+    runtime: docker
+    plan: free
+    region: frankfurt
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    envVars:
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+      - key: ConnectionStrings__DefaultConnection
+        fromDatabase:
+          name: sdps-db
+          property: connectionString
+
+databases:
+  - name: sdps-db
+    plan: free
+    region: frankfurt
+    databaseName: sdps
+    postgresMajorVersion: "17"
