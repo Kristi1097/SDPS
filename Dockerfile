@@ -19,4 +19,5 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 COPY --from=backend /app/publish .
 COPY --from=frontend /src/SmartDocumentProcessingSystemFrontend/dist/SmartDocumentProcessingSystemFrontend/browser ./wwwroot
+COPY sample-data /sample-data
 CMD ["sh", "-c", "ASPNETCORE_URLS=http://+:${PORT:-8080} dotnet SmartDocumentProcessingSystem.dll"]
