@@ -365,3 +365,5 @@ FodyWeavers.xsd
 # Local OCR/runtime tooling. Install Tesseract outside the repo or keep local
 # experiments here without committing binaries.
 tools/tesseract/
+render_api_key.txt
+render-openapi.json
