@@ -111,7 +111,7 @@ public class DocumentService : IDocumentService
                 }
 
                 await using var refreshStream = File.OpenRead(file);
-                var refreshed = await ProcessStreamAsync(refreshStream, fileName, cancellationToken);
+                var refreshed = await ProcessStreamAsync(refreshStream, fileName, cancellationToken, existingDocument.Id);
                 RefreshEntity(existingDocument, refreshed);
                 imported.Add(existingDocument);
                 continue;
@@ -228,7 +228,7 @@ public class DocumentService : IDocumentService
         return true;
     }
 
-    private async Task<Document> ProcessStreamAsync(Stream stream, string fileName, CancellationToken cancellationToken)
+    private async Task<Document> ProcessStreamAsync(Stream stream, string fileName, CancellationToken cancellationToken, int? currentDocumentId = null)
     {
         var extension = Path.GetExtension(fileName);
         var supported = DocumentTextExtractor.IsSupported(extension);
@@ -255,7 +255,7 @@ public class DocumentService : IDocumentService
             });
         }
 
-        var duplicate = await IsDuplicateDocumentNumberAsync(extracted.DocumentNumber, null, cancellationToken);
+        var duplicate = await IsDuplicateDocumentNumberAsync(extracted.DocumentNumber, currentDocumentId, cancellationToken);
         var issues = _validator.Validate(extracted, duplicate);
 
         return ToEntity(extracted, issues);
