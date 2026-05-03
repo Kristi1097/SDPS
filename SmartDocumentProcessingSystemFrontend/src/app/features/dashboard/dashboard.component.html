@@ -1,0 +1,200 @@
+<main class="workspace">
+  <header class="topbar">
+    <div>
+      <h1>Smart Document Processing</h1>
+      <p>Extract, validate, review, and confirm business documents.</p>
+    </div>
+    <div class="actions">
+      <label class="file-button">
+        Upload
+        <input type="file" (change)="uploadFile($event)" accept=".pdf,.png,.jpg,.jpeg,.csv,.txt" />
+      </label>
+      <button type="button" [class.done]="isActionDone('import')" (click)="importSamples()">
+        <span *ngIf="isActionDone('import')">✓</span>
+        Import samples
+      </button>
+      <button type="button" class="secondary" (click)="refresh()">Refresh</button>
+    </div>
+  </header>
+
+  <section class="message-row" *ngIf="actionMessage || errorMessage || loading">
+    <span class="message" *ngIf="loading">Loading...</span>
+    <span class="message success" *ngIf="actionMessage">{{ actionMessage }}</span>
+    <span class="message error" *ngIf="errorMessage">{{ errorMessage }}</span>
+  </section>
+
+  <section class="summary-grid">
+    <div class="metric" *ngFor="let status of statuses">
+      <span>{{ status }}</span>
+      <strong>{{ statusCount(status) }}</strong>
+    </div>
+    <div class="metric issue">
+      <span>Errors</span>
+      <strong>{{ summary?.errorCount ?? 0 }}</strong>
+    </div>
+    <div class="metric warning">
+      <span>Warnings</span>
+      <strong>{{ summary?.warningCount ?? 0 }}</strong>
+    </div>
+  </section>
+
+  <section class="currency-strip" *ngIf="currencyTotals().length > 0">
+    <div *ngFor="let total of currencyTotals()">
+      <span>{{ total[0] }}</span>
+      <strong>{{ total[1] | number: '1.2-2' }}</strong>
+    </div>
+  </section>
+
+  <section class="layout">
+    <section class="document-list">
+      <div class="section-heading">
+        <h2>Documents</h2>
+        <span>{{ documents.length }} records</span>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>File</th>
+            <th>Type</th>
+            <th>Number</th>
+            <th>Supplier</th>
+            <th>Total</th>
+            <th>Issues</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr
+            *ngFor="let doc of documents; trackBy: trackDocument"
+            [class.selected]="editableDocument?.id === doc.id"
+            (click)="selectDocument(doc)"
+          >
+            <td>{{ doc.originalFileName }}</td>
+            <td>{{ doc.type }}</td>
+            <td>{{ doc.documentNumber || '-' }}</td>
+            <td>{{ doc.supplier || '-' }}</td>
+            <td>{{ doc.currency || '' }} {{ doc.total ?? '-' }}</td>
+            <td>
+              <span class="issue-count" *ngIf="doc.errorCount">{{ doc.errorCount }} E</span>
+              <span class="issue-count warning" *ngIf="doc.warningCount">{{ doc.warningCount }} W</span>
+              <span *ngIf="!doc.errorCount && !doc.warningCount">0</span>
+            </td>
+            <td><span [class]="issueClass(doc.status)">{{ doc.status }}</span></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="empty" *ngIf="documents.length === 0 && !loading">
+        No documents processed yet.
+      </div>
+    </section>
+
+    <aside class="review-panel" *ngIf="editableDocument">
+      <div class="section-heading">
+        <h2>Review</h2>
+        <span>{{ editableDocument.originalFileName }}</span>
+      </div>
+
+      <form class="review-form">
+        <label>
+          Type
+          <select [(ngModel)]="editableDocument.type" name="type">
+            <option *ngFor="let type of documentTypes" [value]="type">{{ type }}</option>
+          </select>
+        </label>
+        <label>
+          Number
+          <input [(ngModel)]="editableDocument.documentNumber" name="documentNumber" />
+        </label>
+        <label>
+          Supplier
+          <input [(ngModel)]="editableDocument.supplier" name="supplier" />
+        </label>
+        <label>
+          Currency
+          <input [(ngModel)]="editableDocument.currency" name="currency" maxlength="3" />
+        </label>
+        <label>
+          Issue date
+          <input type="date" [(ngModel)]="editableDocument.issueDate" name="issueDate" />
+        </label>
+        <label>
+          Due date
+          <input type="date" [(ngModel)]="editableDocument.dueDate" name="dueDate" />
+        </label>
+        <label>
+          Subtotal
+          <input type="number" step="0.01" [(ngModel)]="editableDocument.subtotal" name="subtotal" />
+        </label>
+        <label>
+          Tax
+          <input type="number" step="0.01" [(ngModel)]="editableDocument.tax" name="tax" />
+        </label>
+        <label>
+          Total
+          <input type="number" step="0.01" [(ngModel)]="editableDocument.total" name="total" />
+        </label>
+      </form>
+
+      <div class="line-items">
+        <div class="section-heading compact">
+          <h3>Line items</h3>
+          <button type="button" class="secondary" (click)="addLineItem()">Add line</button>
+        </div>
+
+        <div class="line-grid header">
+          <span>Description</span>
+          <span>Qty</span>
+          <span>Unit</span>
+          <span>Tax %</span>
+          <span>Total</span>
+          <span></span>
+        </div>
+        <div class="line-grid" *ngFor="let item of editableDocument.lineItems; let i = index; trackBy: trackLineItem">
+          <input [(ngModel)]="item.description" [name]="'desc' + i" />
+          <input type="number" step="0.01" [(ngModel)]="item.quantity" [name]="'qty' + i" />
+          <input type="number" step="0.01" [(ngModel)]="item.unitPrice" [name]="'unit' + i" />
+          <input type="number" step="0.01" [(ngModel)]="item.taxRate" [name]="'rate' + i" />
+          <input type="number" step="0.01" [(ngModel)]="item.total" [name]="'total' + i" />
+          <button type="button" class="icon-button" (click)="removeLineItem(i)" title="Remove line">x</button>
+        </div>
+      </div>
+
+      <section class="issues" *ngIf="editableDocument.validationIssues.length > 0">
+        <h3>Validation issues</h3>
+        <div class="issue-row" *ngFor="let issue of editableDocument.validationIssues" [class.error]="issue.severity === 'Error'">
+          <strong>{{ issue.severity }}</strong>
+          <span>{{ issue.fieldPath }}</span>
+          <p>{{ issue.message }}</p>
+          <small *ngIf="issue.expectedValue || issue.actualValue">
+            Expected {{ issue.expectedValue || '-' }}, actual {{ issue.actualValue || '-' }}
+          </small>
+        </div>
+      </section>
+
+      <div class="review-actions">
+        <button type="button" [class.done]="isActionDone('save')" (click)="saveCorrections()">
+          <span *ngIf="isActionDone('save')">✓</span>
+          Save corrections
+        </button>
+        <button type="button" class="secondary" [class.done]="isActionDone('validate')" (click)="revalidate()">
+          <span *ngIf="isActionDone('validate')">✓</span>
+          Revalidate
+        </button>
+        <button type="button" class="confirm" [class.done]="isActionDone('confirm')" (click)="confirm()">
+          <span *ngIf="isActionDone('confirm')">✓</span>
+          Confirm
+        </button>
+        <button type="button" class="reject" [class.done]="isActionDone('reject')" (click)="reject()">
+          <span *ngIf="isActionDone('reject')">✓</span>
+          Reject
+        </button>
+      </div>
+    </aside>
+
+    <aside class="review-panel empty-panel" *ngIf="!editableDocument">
+      Select a document to review extracted fields and validation issues.
+    </aside>
+  </section>
+</main>
