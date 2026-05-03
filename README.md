@@ -1,5 +1,6 @@
 # Smart Document Processing System
 
+Live demo deployed app can be accessed and used at: https://sdps.onrender.com, keep in mind it won't be up for a long time.
 End-to-end document processing demo for invoices and purchase orders. The app ingests PDF, TXT, CSV, and image files, extracts structured fields, validates the result, and provides a review UI for corrections and confirmation.
 
 ## Stack
