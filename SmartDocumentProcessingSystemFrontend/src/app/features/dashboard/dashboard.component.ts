@@ -22,8 +22,10 @@ import { DocumentApiService } from '../../services/document-api.service';
 export class DashboardComponent implements OnInit {
   documents: DocumentSummary[] = [];
   editableDocument: DocumentDetail | null = null;
+  selectedDocumentId: number | null = null;
   summary: DashboardSummary | null = null;
   loading = false;
+  detailLoading = false;
   busyAction = '';
   actionMessage = '';
   errorMessage = '';
@@ -62,7 +64,14 @@ export class DashboardComponent implements OnInit {
 
   selectDocument(document: DocumentSummary) {
     this.actionMessage = '';
-    this.api.getDocument(document.id).subscribe({
+    this.errorMessage = '';
+    this.selectedDocumentId = document.id;
+    this.editableDocument = null;
+    this.detailLoading = true;
+    this.api.getDocument(document.id).pipe(
+      timeout(15000),
+      finalize(() => (this.detailLoading = false))
+    ).subscribe({
       next: (detail) => {
         this.editableDocument = structuredClone(detail);
       },
@@ -78,12 +87,16 @@ export class DashboardComponent implements OnInit {
     }
 
     this.startAction('upload');
-    this.api.upload(file).pipe(finalize(() => this.finishAction('upload'))).subscribe({
+    this.api.upload(file).pipe(
+      timeout(60000),
+      finalize(() => this.finishAction('upload'))
+    ).subscribe({
       next: (document) => {
         this.showSuccess('upload', `Uploaded ${document.originalFileName}.`);
         input.value = '';
         this.refresh(false);
         this.editableDocument = structuredClone(document);
+        this.selectedDocumentId = document.id;
       },
       error: () => {
         this.errorMessage = 'Upload failed.';
@@ -93,7 +106,10 @@ export class DashboardComponent implements OnInit {
 
   importSamples() {
     this.startAction('import');
-    this.api.importSamples().pipe(finalize(() => this.finishAction('import'))).subscribe({
+    this.api.importSamples().pipe(
+      timeout(120000),
+      finalize(() => this.finishAction('import'))
+    ).subscribe({
       next: (documents) => {
         this.showSuccess('import', `Imported ${documents.length} sample documents.`);
         this.refresh(false);
@@ -123,7 +139,10 @@ export class DashboardComponent implements OnInit {
     };
 
     this.startAction('save');
-    this.api.update(this.editableDocument.id, request).pipe(finalize(() => this.finishAction('save'))).subscribe({
+    this.api.update(this.editableDocument.id, request).pipe(
+      timeout(30000),
+      finalize(() => this.finishAction('save'))
+    ).subscribe({
       next: (document) => this.afterDocumentAction(document, 'Corrections saved and validation refreshed.', 'save'),
       error: () => (this.errorMessage = 'Could not save corrections.'),
     });
@@ -135,7 +154,10 @@ export class DashboardComponent implements OnInit {
     }
 
     this.startAction('validate');
-    this.api.validate(this.editableDocument.id).pipe(finalize(() => this.finishAction('validate'))).subscribe({
+    this.api.validate(this.editableDocument.id).pipe(
+      timeout(30000),
+      finalize(() => this.finishAction('validate'))
+    ).subscribe({
       next: (document) => this.afterDocumentAction(document, 'Validation refreshed.', 'validate'),
       error: () => (this.errorMessage = 'Validation failed.'),
     });
@@ -147,7 +169,10 @@ export class DashboardComponent implements OnInit {
     }
 
     this.startAction('confirm');
-    this.api.confirm(this.editableDocument.id).pipe(finalize(() => this.finishAction('confirm'))).subscribe({
+    this.api.confirm(this.editableDocument.id).pipe(
+      timeout(30000),
+      finalize(() => this.finishAction('confirm'))
+    ).subscribe({
       next: (document) => this.afterDocumentAction(document, 'Document confirmed when no blocking errors remain.', 'confirm'),
       error: () => (this.errorMessage = 'Could not confirm document.'),
     });
@@ -159,7 +184,10 @@ export class DashboardComponent implements OnInit {
     }
 
     this.startAction('reject');
-    this.api.reject(this.editableDocument.id).pipe(finalize(() => this.finishAction('reject'))).subscribe({
+    this.api.reject(this.editableDocument.id).pipe(
+      timeout(30000),
+      finalize(() => this.finishAction('reject'))
+    ).subscribe({
       next: (document) => this.afterDocumentAction(document, 'Document rejected.', 'reject'),
       error: () => (this.errorMessage = 'Could not reject document.'),
     });
@@ -212,6 +240,7 @@ export class DashboardComponent implements OnInit {
   private afterDocumentAction(document: DocumentDetail, message: string, action: string) {
     this.errorMessage = '';
     this.editableDocument = structuredClone(document);
+    this.selectedDocumentId = document.id;
     this.showSuccess(action, message);
     this.refresh(false);
   }

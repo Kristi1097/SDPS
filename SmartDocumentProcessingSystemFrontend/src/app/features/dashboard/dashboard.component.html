@@ -9,7 +9,9 @@
         <span *ngIf="isActionDone('import')">✓</span>
         {{ isActionBusy('import') ? 'Importing...' : 'Import samples' }}
       </button>
-      <button type="button" class="secondary" (click)="refresh()">Refresh</button>
+      <button type="button" class="secondary" (click)="refresh()">
+        {{ loading ? 'Refreshing...' : 'Refresh' }}
+      </button>
     </div>
   </header>
 
@@ -63,7 +65,7 @@
         <tbody>
           <tr
             *ngFor="let doc of documents; trackBy: trackDocument"
-            [class.selected]="editableDocument?.id === doc.id"
+            [class.selected]="selectedDocumentId === doc.id"
             (click)="selectDocument(doc)"
           >
             <td>{{ doc.originalFileName }}</td>
@@ -176,7 +178,7 @@
         </button>
         <button type="button" class="secondary" [class.done]="isActionDone('validate')" [disabled]="isActionBusy('validate')" (click)="revalidate()">
           <span *ngIf="isActionDone('validate')">✓</span>
-          {{ isActionBusy('validate') ? 'Checking...' : 'Revalidate' }}
+          {{ isActionBusy('validate') ? 'Revalidating...' : 'Revalidate' }}
         </button>
         <button type="button" class="confirm" [class.done]="isActionDone('confirm')" [disabled]="isActionBusy('confirm')" (click)="confirm()">
           <span *ngIf="isActionDone('confirm')">✓</span>
@@ -189,7 +191,11 @@
       </div>
     </aside>
 
-    <aside class="review-panel empty-panel" *ngIf="!editableDocument">
+    <aside class="review-panel empty-panel" *ngIf="detailLoading">
+      Loading document...
+    </aside>
+
+    <aside class="review-panel empty-panel" *ngIf="!editableDocument && !detailLoading">
       Select a document to review extracted fields and validation issues.
     </aside>
   </section>
